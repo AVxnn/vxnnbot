@@ -1,0 +1,21 @@
+{
+  "name": "telegram-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.26.1",
+    "brawlstars.js": "^1.2.3",
+    "dotenv": "^16.0.3",
+    "fs-extra": "^11.1.0",
+    "node-telegram-bot-api": "^0.56.0",
+    "nodemon": "^2.0.15"
+  }
+}
