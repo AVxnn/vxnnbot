@@ -88,21 +88,8 @@ bot.onText(/\/editable/, function onEditableText(msg) {
   };
   bot.sendMessage(msg.from.id, 'Original Text', opts);
 });
-bot.on('callback_query', function onCallbackQuery(callbackQuery) {
-  const action = callbackQuery.data;
-  const msg = callbackQuery.message;
-  const opts = {
-    chat_id: msg.chat.id,
-    message_id: msg.message_id,
-  };
-  let text;
 
-  if (action === 'edit') {
-    text = 'Edited Textewfwef';
-  }
 
-  bot.editMessageText(text, opts);
-});
 bot.onText(/\/love/, async function onLoveText(msg) {
   await bot.sendPoll(msg.chat.id, 'Is Telegram great?', ['Sure', 'Of course'], {is_anonymous: false})
 });
@@ -208,12 +195,11 @@ bot.on('message', async (msg) => {
   if (msg.text === 'ты собака') {
     const opts = {
       reply_to_message_id: msg.message_id,
-      reply_markup: JSON.stringify({
-        keyboard: [
-          [`/send@MetaVxnn_bot 679898263 Скоро вам ответят в течении 30 минут`],
-          ['No, sorry there is another one...']
+      'reply_markup': {
+        'inline_keyboard' : [
+          [{text: "Ответить", callback_data: "reply"}, {text: "Заготовка", callback_data: "defaul"}]
         ]
-      })
+      }
     };
     await bot.sendMessage(msg.chat.id, `Сам ты собака`, opts)
     await bot.sendPoll(msg.chat.id, 'Is Telegram great?', ['Sure', 'Of course'], {is_anonymous: false})
@@ -230,16 +216,15 @@ bot.on('message', async (msg) => {
     await bot.sendMessage(679898263, `Имя: ${msg.from.first_name};\nСообщение: ${msg.text};\nchatId: ${msg.chat.id}`, {
       'reply_markup': {
         'inline_keyboard' : [
-          [{text: "Ответить", callback_data: "reply"}, {text: "Заготовка", callback_data: "defaul"}]
+          [{text: "Убрать клаву", callback_data: "clear"}, {text: "Заготовка", callback_data: "demo"}]
         ]
-        
       }
     })
   } else {
     await bot.sendMessage(679898263, `Имя: ${msg.from.first_name};\nid: ${msg.from.id};\nСообщение: ${msg.text};\nchatId: ${msg.chat.id}`, {
       'reply_markup': {
         'inline_keyboard': [
-          [{text: "Ответить", callback_data: "reply"}, {text: "Заготовка", callback_data: "defaul"}]
+          [{text: "Убрать клаву", callback_data: "clear"}, {text: "Заготовка", callback_data: "demo"}]
         ]
       }
     })
@@ -248,7 +233,7 @@ bot.on('message', async (msg) => {
 
 
 // -1001178790101
-bot.on('callback_query', (query) => {
+bot.on('callback_query', async (query) => {
   const chatId = query.message.chat.id;
 
   let url = '';
@@ -262,7 +247,36 @@ bot.on('callback_query', (query) => {
             inline_keyboard: gif
           }
         });
-        console.log(url)
       })
   }
-});
+  if (query.data == 'clear') {
+    const action = query.data;
+    const msg = query.message;
+    const opts = {
+      chat_id: msg.chat.id,
+      message_id: msg.message_id,
+      reply_markup: {
+        remove_keyboard: true
+      }
+    };
+    let text;
+
+    if (action === 'clear') {
+      text = 'Клавиатура убрана';
+    }
+
+    bot.sendMessage(chatId, text, opts);
+  }
+  if(query.data == 'demo') {
+    const opts = {
+      reply_markup: JSON.stringify({
+        'keyboard': [[`/send@MetaVxnn_bot ${query.message?.text?.match('chatId:[ ][ -[][0-9]*')[0].split(' ')[1]} Вам ответят в течении 30 минут`]],
+        'inline_keyboard' : [
+          [{text: "убрать клаву", callback_data: "clear"}]
+        ]
+      })
+    };
+    await bot.sendMessage(chatId, `Заготовка:`, opts)
+}
+  }
+);
