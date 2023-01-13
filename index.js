@@ -69,6 +69,47 @@ bot.onText(/\/trans@MetaVxnn_bot (.+)/, async(msg, match) => {
   }
 });
 
+
+
+bot.onText(/\/editable/, function onEditableText(msg) {
+  const opts = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: 'Edit Text',
+            // we shall check for this value when we listen
+            // for "callback_query"
+            callback_data: 'edit'
+          }
+        ]
+      ]
+    }
+  };
+  bot.sendMessage(msg.from.id, 'Original Text', opts);
+});
+bot.on('callback_query', function onCallbackQuery(callbackQuery) {
+  const action = callbackQuery.data;
+  const msg = callbackQuery.message;
+  const opts = {
+    chat_id: msg.chat.id,
+    message_id: msg.message_id,
+  };
+  let text;
+
+  if (action === 'edit') {
+    text = 'Edited Textewfwef';
+  }
+
+  bot.editMessageText(text, opts);
+});
+bot.onText(/\/love/, async function onLoveText(msg) {
+  await bot.sendPoll(msg.chat.id, 'Is Telegram great?', ['Sure', 'Of course'], {is_anonymous: false})
+});
+
+
+
+
 // ${msg.from.first_name} решил испытать свою удачу.
 bot.onText(/\/brawl@MetaVxnn_bot (.+)/, async(msg, match) => {
   const value = match[1];
@@ -165,8 +206,20 @@ bot.on('message', async (msg) => {
   }
 
   if (msg.text === 'ты собака') {
-    await bot.sendMessage(msg.chat.id, `Сам ты собака`)
-    await bot.sendPoll(chatId, 'Is Telegram great?', ['Sure', 'Of course'])
+    const opts = {
+      reply_to_message_id: msg.message_id,
+      reply_markup: JSON.stringify({
+        keyboard: [
+          [`/send@MetaVxnn_bot 679898263 Скоро вам ответят в течении 30 минут`],
+          ['No, sorry there is another one...']
+        ]
+      })
+    };
+    await bot.sendMessage(msg.chat.id, `Сам ты собака`, opts)
+    await bot.sendPoll(msg.chat.id, 'Is Telegram great?', ['Sure', 'Of course'], {is_anonymous: false})
+    await bot.sendDice(msg.chat.id)
+    console.log(msg);
+    await bot.forwardMessage(msg.chat.id, 679898263, 1313)
   }
 
   if (msg.from.id === 679898263) {
@@ -179,6 +232,7 @@ bot.on('message', async (msg) => {
         'inline_keyboard' : [
           [{text: "Ответить", callback_data: "reply"}, {text: "Заготовка", callback_data: "defaul"}]
         ]
+        
       }
     })
   } else {
