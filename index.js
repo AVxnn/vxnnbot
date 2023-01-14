@@ -3,20 +3,22 @@ require('dotenv').config()
 const axios = require("axios");
 const token = process.env.TELEGRAM_API_TOKEN || '';
 const translit = require('./func/translit')
+const logger = require('./middleware/logger')
 
 const bot = new TelegramBot(token, {polling: true});
 
 let data = {
   admin: '',
   user: '',
-  isActive: false
+  isActive: false,
+  stars: false
 }
 
 const keyboard = [
   [
     {
       text: 'Сгенерировать котика',
-      callback_data: 'generate'
+      callback_data: 'cat'
     }
   ]
 ];
@@ -30,12 +32,19 @@ const gif = [
   ]
 ];
 
-const generatee = async (e, url) => {
-  await bot.sendPhoto(e, url, {
+const generatee = async (msg, url) => {
+  console.log(msg);
+  await bot.editMessageMedia({
+    type: 'photo',
+    media: url,
+  },
+  {
+    chat_id: msg.chat.id,
+    message_id: msg.message_id,
     reply_markup: {
       inline_keyboard: keyboard
     }
-  });
+  })
 }
 
 bot.onText(/\/start/, async (msg, match) => {
@@ -106,7 +115,8 @@ bot.onText(/\/send@MetaVxnn_bot (.+) (.+)/, async (msg, match) => {
 });
 bot.onText(/\/report@MetaVxnn_Bot (.+)/, async (msg, match) => {
   console.log(12,msg);
-  await bot.sendMessage(679898263, `${match[1]} 
+  await bot.sendMessage(679898263, `${msg.from.first_name}
+Сообщение: ${match[1]} 
 id ${msg.from.id};
 messageId ${msg.message_id}`, {
     'reply_markup': {
@@ -124,30 +134,41 @@ bot.onText(/\/cube/,async (msg) => {
   await bot.sendMessage(msg.chat.id, `Я бросил(а) кубик и выпало число: ${Math.round(Math.random() * 6)}`)
 });
 
-bot.setMyCommands([
+
+bot.setMyCommands(JSON.stringify([
   {command: '/random', description: 'Генерация рандомного котика'},
+  {command: '/cube', description: 'Кинуть куб'},
   {command: '/gif', description: 'Генерация рандомной gif'},
   {command: '/q', description: 'Да или нет'},
-])
+  {command: '/report', description: 'Связь с админом'},
+  {command: '/trans', description: 'Перевод с английского на русский раскладка'},
+  {command: '/help', description: 'Все команды'},
+]))
 
 bot.on('message', async (msg) => {
+  logger(msg)
+
   const chatId = msg.chat.id;
   console.log(data);
+
   if (msg.text === '/random' || msg.text === '/random@MetaVxnn_bot') {
     axios.get('https://api.thecatapi.com/v1/images/search')
       .then(res => {
         url = res.data[0].url
-        generatee(chatId, url)
+        bot.sendPhoto(msg.chat.id, url, {
+          reply_markup: {
+            inline_keyboard: keyboard
+          }
+        })
       })
   }
   if (msg.text === '/help' || msg.text === '/help@MetaVxnn_bot') {
     await bot.sendMessage(msg.chat.id, `Список команд:
-    /q@MetaVxnn_Bot "текст" - спроси бота да или нет
-    /trans@MetaVxnn_Bot "текст" - поможет поменять английские буквы на русские
-    /gif - сгенерирует рандомную гифку
-    /random - сгенерирует рандомного котика
-    /report@MetaVxnn_Bot "текст" - написать сообщение админу
-
+/q@MetaVxnn_Bot "текст" - спроси бота да или нет
+/trans@MetaVxnn_Bot "текст" - поможет поменять английские буквы на русские
+/gif - сгенерирует рандомную гифку
+/random - сгенерирует рандомного котика
+/report@MetaVxnn_Bot "текст" - написать сообщение админу
     `)
   }
 
@@ -165,12 +186,17 @@ bot.on('message', async (msg) => {
 
   if(data.isActive && msg.from.id == data.user || msg.from.id == data.admin) {
     if(msg.text === 'Disconnect') {
-      await bot.sendMessage(data.admin, 'Разговор окончен')
-      await bot.sendMessage(data.user, 'Разговор окончен')
+      await bot.sendMessage(data.admin, 'Разговор окончен', {reply_markup: {
+        remove_keyboard: true
+      }})
+      await bot.sendMessage(data.user, 'Разговор окончен', {reply_markup: {
+        remove_keyboard: true
+      }})
       data = {
         admin: '',
         user: '',
-        isActive: false
+        isActive: false,
+        stars: false
       }
     }
     if(msg.from.id == data.admin) {
@@ -188,6 +214,18 @@ bot.on('message', async (msg) => {
       }
       if (msg.text) {
         await bot.sendMessage(data.admin, msg.text);
+      }
+    }
+    if(data.stars) {
+      await bot.sendMessage(data.admin, `Вас оценили на ${msg.text}` );
+      await bot.sendMessage(data.user, 'Разговор окончен', {reply_markup: {
+        remove_keyboard: true
+      }})
+      data = {
+        admin: '',
+        user: '',
+        isActive: false,
+        stars: false
       }
     }
   }
@@ -215,6 +253,14 @@ bot.on('callback_query', async (query) => {
   const chatId = query.message.chat.id;
 
   let url = '';
+
+  if (query.data == 'cat') {
+    axios.get('https://api.thecatapi.com/v1/images/search')
+      .then(res => {
+        url = res.data[0].url
+        generatee(query.message, url)
+      })
+  }
 
   if (query.data === 'gif') {
     axios.get('https://api.giphy.com/v1/gifs/random?api_key=E7urEC8EODS2Ua5cQehdGDIoIVtlbNmA&tag=&rating=g')
@@ -256,6 +302,22 @@ bot.on('callback_query', async (query) => {
       };
       await bot.sendMessage(chatId, `Заготовка:`, opts)
     }
+    if(query.data == 'also') {
+      const msg = query.message;
+      const opts = {
+        chat_id: msg.chat.id,
+        message_id: msg.message_id,
+        reply_markup: JSON.stringify({
+          'inline_keyboard': [
+            [{text: "Подключиться", callback_data: "connect"}, {text: "Удалить", callback_data: "delete"}]
+          ]
+        })
+      };
+      await bot.editMessageText(`Вы отправили сообщение что заняты и напишите позже
+id ${query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1]};
+messageId ${query.message?.text?.match('messageId[ ][ -[][0-9]*')[0].split(' ')[1]}`, opts)
+      await bot.sendMessage(query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1], 'Админ на курорте и ответит вам чуть позже')
+    }
     if(query.data == 'connect') {
       console.log(query);
       const msg = query.message;
@@ -264,25 +326,34 @@ bot.on('callback_query', async (query) => {
         message_id: msg.message_id,
         reply_markup: JSON.stringify({
           'inline_keyboard' : [
-            [{text: "Отключиться", callback_data: "disconnect"}]
+            [{text: "Приветствие", callback_data: "welcome"}, {text: "Уточнение", callback_data: "faq"}],
+            [{text: "Отзыв", callback_data: "stars"}, {text: "Отзыв", callback_data: "stars"}],
+            [{text: "Отключиться", callback_data: "disconnect"}],
           ]
         })
       };
       data = {
         admin: 679898263,
         user: +query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1],
-        isActive: true
+        isActive: true,
+        stars: false
       }
       console.log(data);
       await bot.editMessageText(`Вы подключились к ${msg.from.first_name}
-      id ${msg.from.id};
-      messageId ${msg.message_id}`, opts)
-      await bot.sendMessage(msg.chat.id, '...', {
+id ${msg.from.id};
+messageId ${msg.message_id}`, opts)
+      await bot.sendMessage(msg.chat.id, '...',
+      {
         reply_markup: JSON.stringify({
           'keyboard': [['Disconnect']],
         })
       })
-      await bot.sendMessage(query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1], 'К вам подключился админ Георгий, ожидайте')
+      await bot.sendMessage(query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1], 'К вам подключился админ Георгий, ожидайте', 
+      {
+        reply_markup: JSON.stringify({
+          'keyboard': [['Disconnect']],
+        })
+      })
     }
 
     if(query.data == 'disconnect') {
@@ -298,7 +369,24 @@ bot.on('callback_query', async (query) => {
       data = {
         admin: '',
         user: '',
-        isActive: false
+        isActive: false,
+        stars: false
+      }
+    }
+
+    if(query.data == 'welcome') {
+      await bot.sendMessage(data.user, 'Здравствуйте, могли бы вы уточнить ваш вопрос')
+    }
+    if(query.data == 'stars') {
+      await bot.sendMessage(data.user, 'Спасибо за обращение, будем благодарны если оставите вашу оценку от 1 до 5', 
+      {
+        reply_markup: JSON.stringify({
+          'keyboard': [['1', '2', '3', '4', '5']],
+        })
+      })
+      data = {
+        ...data,
+        stars: true
       }
     }
   }
