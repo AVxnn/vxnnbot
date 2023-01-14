@@ -1,13 +1,16 @@
 const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config()
 const axios = require("axios");
-const BrawlStars = require("brawlstars.js")
-const tokens = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6IjI4YTMxOGY3LTAwMDAtYTFlYi03ZmExLTJjNzQzM2M2Y2NhNSJ9.eyJpc3MiOiJzdXBlcmNlbGwiLCJhdWQiOiJzdXBlcmNlbGw6Z2FtZWFwaSIsImp0aSI6IjUzYTQyOTcyLWEwOTgtNGNmNS04YThlLTA2YTU5ZWVhYmJjOCIsImlhdCI6MTY2MjE1MTE4MSwic3ViIjoiZGV2ZWxvcGVyL2Q5NDg0ZDJhLWJlNGMtNDQwNC0xOGJhLWI2ODM4OWMwYWNiYiIsInNjb3BlcyI6WyJicmF3bHN0YXJzIl0sImxpbWl0cyI6W3sidGllciI6ImRldmVsb3Blci9zaWx2ZXIiLCJ0eXBlIjoidGhyb3R0bGluZyJ9LHsiY2lkcnMiOlsiOC4yMS4xMTAuMjAiXSwidHlwZSI6ImNsaWVudCJ9XX0.mAuB-Ux5PRFceES2aSMknlZ19R8ajomm014U4t4hgFnEeynlg14eKlp6-p3HJJsrV2JYmC-SFoMgtRo6w8HnUg"
-const client = new BrawlStars.Client(tokens)
 const token = process.env.TELEGRAM_API_TOKEN || '';
 const translit = require('./func/translit')
 
 const bot = new TelegramBot(token, {polling: true});
+
+let data = {
+  admin: '',
+  user: '',
+  isActive: false
+}
 
 const keyboard = [
   [
@@ -40,11 +43,10 @@ bot.onText(/\/start/, async (msg, match) => {
   let value = match[0].split(' ').filter((v, i) => i >= 2).join(' ')
   console.log(value)
   await bot.sendSticker(chatId, 'CAACAgQAAxkBAAEEnIdib_FFuDgXsXRfSksM4SefWQJY7gACjgsAAvsm6FJ-_p0kiwRi2iQE');
-  await bot.sendMessage(chatId, `Приветики, тебя зовут ${msg.from.first_name} правильно?
-Я думаю что мы с тобой отлично проведем время!`);
+  await bot.sendMessage(chatId, `Привет я бот одного популярного человека, если хочешь узнать по больше команд то напиши /help `);
 
   setTimeout(() => {
-    bot.sendMessage(chatId, `Команды есть в менюшке ниже или напиши в строке "/" `);
+    bot.sendMessage(chatId, `А так же ты можешь написать /report "text" и в скором времени я отвечу тебе лично`);
   }, 2000)
 });
 
@@ -94,38 +96,6 @@ bot.onText(/\/love/, async function onLoveText(msg) {
   await bot.sendPoll(msg.chat.id, 'Is Telegram great?', ['Sure', 'Of course'], {is_anonymous: false})
 });
 
-
-
-
-// ${msg.from.first_name} решил испытать свою удачу.
-bot.onText(/\/brawl@MetaVxnn_bot (.+)/, async(msg, match) => {
-  const value = match[1];
-  console.log(msg, match)
-  const player = await client.getPlayer(value)
-  const bestBrawler = player.brawlers.filter(i => i.trophies === Math.max(...player.brawlers.map(i => {return +i.trophies})))
-  await bot.sendMessage(msg.chat.id, `Имя: ${player.name}, 
-Тэг: ${player.tag}, 
-Кубки: ${player.trophies}, 
-всего побед: ${player.totalVictories}, 
-всего бравлеров: ${player.brawlerCount},
-  💚 любимый бравлер: ${bestBrawler[0].name},
-  💚 сила: ${bestBrawler[0].power},
-  💚 ранг: ${bestBrawler[0].rank},
-  💚 кубков: ${bestBrawler[0].trophies}`)
-});
-
-bot.onText(/\/brawler@MetaVxnn_bot (.+)/, async(msg, match) => {
-  const value = match[1];
-  console.log(msg, match)
-  const res = await client.getBrawlers()
-  const brawler = res.data.filter(i => i.name === value.toUpperCase())
-  console.log(brawler[0].gadgets)
-  await bot.sendMessage(msg.chat.id, `Имя бравлера: ${brawler[0].name},
-id: ${brawler[0].id},
-Гаджеты: ${brawler[0].gadgets.length > 1 ? brawler[0].gadgets.map(i => (` ${i.name} `)) : `${brawler[0].gadgets[0].name}`},
-Пассивки: ${brawler[0].starPowers.length > 1 ? brawler[0].starPowers.map(i => (` ${i.name} `)) : `${brawler[0].starPowers[0].name}`}`
-  )});
-
 bot.onText(/\/send@MetaVxnn_bot (.+) (.+)/, async (msg, match) => {
   if (msg.from.id === 679898263) {
     const chatI = match[1];
@@ -134,50 +104,51 @@ bot.onText(/\/send@MetaVxnn_bot (.+) (.+)/, async (msg, match) => {
     await bot.sendMessage(chatI, match[0].split(' ').filter((v, i) => i >= 2).join(' '));
   }
 });
+bot.onText(/\/report@MetaVxnn_Bot (.+)/, async (msg, match) => {
+  console.log(12,msg);
+  await bot.sendMessage(679898263, `${match[1]} 
+id ${msg.from.id};
+messageId ${msg.message_id}`, {
+    'reply_markup': {
+      'inline_keyboard': [
+        [{text: "Подключиться", callback_data: "connect"}, {text: "Удалить", callback_data: "delete"}],
+        [{text: "Ответить позже", callback_data: "also"}]
+      ]
+    }
+  });
+  await bot.sendMessage(msg.chat.id, "Вы отправили репорт админу, если он сочтет это интересным он ответит вам -_-");
+});
 
 bot.onText(/\/cube/,async (msg) => {
   console.log(msg)
   await bot.sendMessage(msg.chat.id, `Я бросил(а) кубик и выпало число: ${Math.round(Math.random() * 6)}`)
 });
 
-// bot.onText(/\/idinaxyibot@MetaVxnn_bot (.+)/, async(msg, match) => {
-//         const value = match[1];
-//         console.log(msg, match)
-//         await bot.sendMessage(msg.chat.id, `
-// Действие: ${value}
-// Результат: ${Math.round(Math.random() * 1) == 1 ? 'Да' : 'Нет'}`)
-// });
+bot.setMyCommands([
+  {command: '/random', description: 'Генерация рандомного котика'},
+  {command: '/gif', description: 'Генерация рандомной gif'},
+  {command: '/q', description: 'Да или нет'},
+])
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-
-  if (msg.from.id === 679898263) {
-    bot.setMyCommands([
-      {command: '/random', description: 'Генерация рандомного котика'},
-      {command: '/gif', description: 'Генерация рандомной gif'},
-      {command: '/q', description: 'Да или нет'},
-      {command: '/idinaxyibot', description: 'Пошли нахуй бота'},
-      {command: '/send', description: 'Отправить сообщение определенному человеку'},
-      {command: '/sendall', description: 'Отправка сообщений всем юзерам'},
-      {command: '/sticker', description: 'Отправить стикер определенному человеку'},
-      {command: '/stickerall', description: 'Отправка стикера всем юзерам'},
-      {command: '/photoall', description: 'Отправка фотографии всем юзерам'},
-    ])
-  } else {
-    bot.setMyCommands([
-      {command: '/random', description: 'Генерация рандомного котика'},
-      {command: '/gif', description: 'Генерация рандомной gif'},
-      {command: '/q', description: 'Да или нет'}
-    ])
-    bot.sendMessage(1676384990, `Имя: ${msg.from.first_name}; id: ${msg.from.id}; msg: ${msg.text}; chatId: ${msg.chat.id}`)
-  }
-
+  console.log(data);
   if (msg.text === '/random' || msg.text === '/random@MetaVxnn_bot') {
     axios.get('https://api.thecatapi.com/v1/images/search')
       .then(res => {
         url = res.data[0].url
         generatee(chatId, url)
       })
+  }
+  if (msg.text === '/help' || msg.text === '/help@MetaVxnn_bot') {
+    await bot.sendMessage(msg.chat.id, `Список команд:
+    /q@MetaVxnn_Bot "текст" - спроси бота да или нет
+    /trans@MetaVxnn_Bot "текст" - поможет поменять английские буквы на русские
+    /gif - сгенерирует рандомную гифку
+    /random - сгенерирует рандомного котика
+    /report@MetaVxnn_Bot "текст" - написать сообщение админу
+
+    `)
   }
 
   if (msg.text === '/gif' || msg.text === '/gif@MetaVxnn_bot') {
@@ -190,6 +161,35 @@ bot.on('message', async (msg) => {
           }
         });
       })
+  }
+
+  if(data.isActive && msg.from.id == data.user || msg.from.id == data.admin) {
+    if(msg.text === 'Disconnect') {
+      await bot.sendMessage(data.admin, 'Разговор окончен')
+      await bot.sendMessage(data.user, 'Разговор окончен')
+      data = {
+        admin: '',
+        user: '',
+        isActive: false
+      }
+    }
+    if(msg.from.id == data.admin) {
+      console.log(msg);
+      if (msg.photo) {
+        await bot.sendPhoto(data.user, msg.photo[3].file_id);
+      }
+      if (msg.text) {
+        await bot.sendMessage(data.user, msg.text);
+      }
+    }
+    if(msg.from.id == data.user) {
+      if (msg.photo) {
+        await bot.sendPhoto(data.admin, msg.photo[3].file_id);
+      }
+      if (msg.text) {
+        await bot.sendMessage(data.admin, msg.text);
+      }
+    }
   }
 
   if (msg.text === 'ты собака') {
@@ -206,28 +206,6 @@ bot.on('message', async (msg) => {
     await bot.sendDice(msg.chat.id)
     console.log(msg);
     await bot.forwardMessage(msg.chat.id, 679898263, 1313)
-  }
-
-  if (msg.from.id === 679898263) {
-    await bot.setMyCommands([
-      {command: '/cube', description: 'Генерирует число от 1 до 6'},
-      {command: '/trans', description: 'Перевод с Дариненого'},
-    ])
-    await bot.sendMessage(679898263, `Имя: ${msg.from.first_name};\nСообщение: ${msg.text};\nchatId: ${msg.chat.id}`, {
-      'reply_markup': {
-        'inline_keyboard' : [
-          [{text: "Убрать клаву", callback_data: "clear"}, {text: "Заготовка", callback_data: "demo"}]
-        ]
-      }
-    })
-  } else {
-    await bot.sendMessage(679898263, `Имя: ${msg.from.first_name};\nid: ${msg.from.id};\nСообщение: ${msg.text};\nchatId: ${msg.chat.id}`, {
-      'reply_markup': {
-        'inline_keyboard': [
-          [{text: "Убрать клаву", callback_data: "clear"}, {text: "Заготовка", callback_data: "demo"}]
-        ]
-      }
-    })
   }
 })
 
@@ -267,16 +245,61 @@ bot.on('callback_query', async (query) => {
 
     bot.sendMessage(chatId, text, opts);
   }
-  if(query.data == 'demo') {
-    const opts = {
-      reply_markup: JSON.stringify({
-        'keyboard': [[`/send@MetaVxnn_bot ${query.message?.text?.match('chatId:[ ][ -[][0-9]*')[0].split(' ')[1]} Вам ответят в течении 30 минут`]],
-        'inline_keyboard' : [
-          [{text: "убрать клаву", callback_data: "clear"}]
-        ]
+    if(query.data == 'demo') {
+      const opts = {
+        reply_markup: JSON.stringify({
+          'keyboard': [[`disconnect`]],
+          'inline_keyboard' : [
+            [{text: "убрать клаву", callback_data: "clear"}]
+          ]
+        })
+      };
+      await bot.sendMessage(chatId, `Заготовка:`, opts)
+    }
+    if(query.data == 'connect') {
+      console.log(query);
+      const msg = query.message;
+      const opts = {
+        chat_id: msg.chat.id,
+        message_id: msg.message_id,
+        reply_markup: JSON.stringify({
+          'inline_keyboard' : [
+            [{text: "Отключиться", callback_data: "disconnect"}]
+          ]
+        })
+      };
+      data = {
+        admin: 679898263,
+        user: +query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1],
+        isActive: true
+      }
+      console.log(data);
+      await bot.editMessageText(`Вы подключились к ${msg.from.first_name}
+      id ${msg.from.id};
+      messageId ${msg.message_id}`, opts)
+      await bot.sendMessage(msg.chat.id, '...', {
+        reply_markup: JSON.stringify({
+          'keyboard': [['Disconnect']],
+        })
       })
-    };
-    await bot.sendMessage(chatId, `Заготовка:`, opts)
-}
+      await bot.sendMessage(query.message?.text?.match('id[ ][ -[][0-9]*')[0].split(' ')[1], 'К вам подключился админ Георгий, ожидайте')
+    }
+
+    if(query.data == 'disconnect') {
+      console.log(query);
+      const msg = query.message;
+      const opts = {
+        chat_id: msg.chat.id,
+        message_id: msg.message_id,
+      };
+      console.log(data);
+      await bot.sendMessage(msg.chat.id, 'Разговор окончен')
+      await bot.sendMessage(data.user, 'Разговор окончен')
+      data = {
+        admin: '',
+        user: '',
+        isActive: false
+      }
+    }
   }
 );
