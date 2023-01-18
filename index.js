@@ -14,6 +14,19 @@ let data = {
   stars: false
 }
 
+let trans = {
+  active: false,
+  user: '',
+  admin: ''
+}
+
+let frontwars = [
+  {
+    name: 'Что выведет консоль?',
+    quest: ['1', '2', '3', '4']
+  }
+]
+
 const keyboard = [
   [
     {
@@ -47,6 +60,17 @@ const generatee = async (msg, url) => {
   })
 }
 
+bot.onText(/\/trans@MetaVxnn_bot (.+)/, async(msg, match) => {
+  try {
+    const value = match[1];
+    console.log(value)
+    console.log(msg, match)
+    await bot.sendMessage(msg.chat.id, `${translit(value)}`)
+  } catch (e) {
+    console.log(e)
+  }
+});
+
 bot.onText(/\/start/, async (msg, match) => {
   const chatId = msg.from.id;
   let value = match[0].split(' ').filter((v, i) => i >= 2).join(' ')
@@ -67,20 +91,6 @@ bot.onText(/\/q@MetaVxnn_bot (.+)/, async(msg, match) => {
 Действие: ${value}
 Результат: ${Math.round(Math.random() * 1) == 1 ? 'Да' : 'Нет'}`)
 });
-
-// ${msg.from.first_name} решил испытать свою удачу.
-bot.onText(/\/trans@MetaVxnn_bot (.+)/, async(msg, match) => {
-  try {
-    const value = match[1];
-    console.log(value)
-    console.log(msg, match)
-    await bot.sendMessage(msg.chat.id, `${translit(value)}`)
-  } catch (e) {
-    console.log(e)
-  }
-});
-
-
 
 bot.onText(/\/editable/, function onEditableText(msg) {
   const opts = {
@@ -162,14 +172,50 @@ bot.on('message', async (msg) => {
         })
       })
   }
+
+  if (msg.text === '/frontwars' || msg.text === '/frontwars@MetaVxnn_bot') {
+    await bot.sendMessage(msg.chat.id, ``)
+  }
+
   if (msg.text === '/help' || msg.text === '/help@MetaVxnn_bot') {
     await bot.sendMessage(msg.chat.id, `Список команд:
 /q@MetaVxnn_Bot "текст" - спроси бота да или нет
 /trans@MetaVxnn_Bot "текст" - поможет поменять английские буквы на русские
+/trans "текст" - тоже самое что и выше только в лс бота
 /gif - сгенерирует рандомную гифку
 /random - сгенерирует рандомного котика
 /report@MetaVxnn_Bot "текст" - написать сообщение админу
     `)
+  }
+
+  if (trans.active) {
+    console.log(trans)
+    if (trans.user == msg.from.id) {
+      await bot.sendMessage(trans.chatId, `${translit(msg.text)}`)
+      trans = {
+        active: false,
+        user: '',
+        chatId: '',
+        admin: ''
+      }
+    }
+  }
+
+  if (msg.text === '/trans' || msg.text === '/trans@MetaVxnn_bot') {
+    console.log(msg)
+    try {
+      await bot.sendMessage(msg.chat.id, `Отправь текст который нужно перевести 
+(работает только в лс бота)`)
+      trans = {
+        active: true,
+        user: msg.from.id,
+        chatId: msg.chat.id,
+        admin: ''
+      }
+      console.log(trans)
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   if (msg.text === '/gif' || msg.text === '/gif@MetaVxnn_bot') {
