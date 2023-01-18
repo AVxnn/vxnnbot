@@ -14,7 +14,7 @@ function translit(word){
     if (converter[word[i]] == undefined){
       answer += word[i].toLowerCase();
     } else {
-      answer += converter[word[i]];
+      answer += converter[word[i]].toLowerCase();
     }
   }
 
